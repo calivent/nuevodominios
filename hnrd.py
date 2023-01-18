@@ -84,6 +84,7 @@ def DNS_Records(domain):
 
 def get_DNS_record_results():
     global IPs
+    #print("IPs:",IPs)
     try:
         with concurrent.futures.ThreadPoolExecutor(max_workers=len(DOMAINS)) as executor:
             future_to_domain = {executor.submit(
@@ -479,22 +480,30 @@ def shannon_entropy(domain):
 
 
 def download_nrd(d):
+    #print("down:",os.path.isfile(d+".zip"))
     if not os.path.isfile(d+".zip"):
         b64 = base64.b64encode((d+".zip").encode('ascii'))
-        nrd_zip = 'https://www.whoisds.com//whois-database/newly-registered-domains/{}/nrd'.format(
+        nrd_zip = 'https://whoisds.com/whois-database/newly-registered-domains/{}/nrd'.format(
             b64.decode('ascii'))
+        print("nrd_zip:",nrd_zip) 
+        
         try:
-            resp = requests.get(nrd_zip, stream=True)
+            resp = requests.get(nrd_zip, stream=True) #
+            headers = resp.headers
 
-            print("Downloading File {} - Size {}...".format(d +
-                                                            '.zip', resp.headers['Content-length']))
+            #print("Downloading File {} - Size {}...".format(d +
+            #                                                '.zip', resp.headers['Content-length']))
             if resp.headers['Content-length']:
                 with open(d+".zip", 'wb') as f:
+                    print("open zip")
                     for data in resp.iter_content(chunk_size=1024):
                         f.write(data)
+                    print("fin zip")
                 try:
                     zip = zipfile.ZipFile(d+".zip")
                     zip.extractall()
+                    os.rename("domain-names.txt",d+".txt")
+                    print("renombrado con exito");
                 except:
                     print("File is not a zip file.")
                     sys.exit()
@@ -578,12 +587,13 @@ if __name__ == '__main__':
 
     parser.add_argument("-v", action="version", version="%(prog)s v1.0")
     args = parser.parse_args()
-
     regexd = re.compile('([\d]{4})-([\d]{1,2})-([\d]{1,2})$')
     if args.date is not None:
         matchObj = re.match(regexd, args.date)
+
         if matchObj:
             if args.date_end is None:
+                #print("args.date:",args.date)
                 download_nrd(args.date)
             else:
                 date_start = datetime.date(
@@ -610,6 +620,7 @@ if __name__ == '__main__':
             sys.exit()
 
         try:
+            print("open txt")
             f = open(args.date + '.txt', 'r')
         except:
             print(
